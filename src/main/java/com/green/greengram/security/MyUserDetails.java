@@ -9,15 +9,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.*;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor
 @Setter
 @Getter
 public class MyUserDetails implements UserDetails, OAuth2User {
 
-
-    private MyUser myUser;
-
+    private MyUser myUser; //JWT 만들 때 payload에 담을 데이터를 담은 객체
 
     @Override
     public Map<String, Object> getAttributes() {
@@ -26,11 +23,25 @@ public class MyUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-//        List<GrantedAuthority> list = new ArrayList();
-//        list.add(new SimpleGrantedAuthority(role));
-//        return list;
-        return Collections.singletonList(new SimpleGrantedAuthority(myUser.getRole()));
+        //단수 > 복수로 변경
+        //(1)
+        //return Collections.singletonList(new SimpleGrantedAuthority(myUser.getRole()));
+
+        //(2)
+        //List<GrantedAuthority> list2 = new ArrayList();
+        //list2.add(new SimpleGrantedAuthority(role));
+        //return list2;
+
+        //(1),(2)는 동일한 결과
+
+        //List<String> >> List<GrantedAuthority>변경하는 작업
+        List<GrantedAuthority> list = new ArrayList<>();
+        for(String role : myUser.getRole()) {
+            list.add(new SimpleGrantedAuthority(role));
+        }
+        return list;
     }
+
 
     @Override
     public String getPassword() {
@@ -39,7 +50,7 @@ public class MyUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public String getUsername() {
-        return null;
+        return myUser == null ? "GUEST" : String.valueOf(myUser.getUserId());
     }
 
     @Override

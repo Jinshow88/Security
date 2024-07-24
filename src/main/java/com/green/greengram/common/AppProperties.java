@@ -3,42 +3,42 @@ package com.green.greengram.common;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+
+import java.util.List;
 
 @Getter
-@ConfigurationProperties(prefix = "app")// prefix의 'app'은 application.yaml파일
-
+//@ConfigurationProperties: yaml에 작성되어 있는 데이터를 객체화 시켜주는 애노테이션
+@ConfigurationProperties(prefix = "app") //prefix의 'app'은 applicationl.yaml파일의 44Line의 'app'을 의미
 public class AppProperties {
     private final Jwt jwt = new Jwt();
-    private final OAuth2 = new OAuth2();
+    private final Oauth2 oauth2 = new Oauth2();
 
-    public Object getOauth2() {
-    }
-
-    // class 명 Jwt 는 application.yaml 의 45Line 의 jwt 를 의미
-    // 멤버필드명은 application.yaml 의 app/jwt/*속성명과 매칭
-    //application.yaml 에서 '-'는 멤버필드에서 카멜케이스기법과 매칭
-    @Setter
+    //class명 Jwt는 application.yaml의 35Line의 'jwt'를 의미
+    //멤버 필드명은 application.yaml의 app/jwt/* 속성명과 매칭
+    //application.yaml에서 '-'는 멤버필드에서 카멜케이스기법과 매칭함
     @Getter
-    public static class Jwt{
+    @Setter
+    public static class Jwt {
         private String secret;
         private String headerSchemaName;
         private String tokenType;
         private long accessTokenExpiry;
         private long refreshTokenExpiry;
+        private String refreshTokenCookieName;
         private int refreshTokenCookieMaxAge;
 
-        public void setRefreshTokenExpiry(long refreshTokenExpiry){
+        public void setRefreshTokenExpiry(long refreshTokenExpiry) {
             this.refreshTokenExpiry = refreshTokenExpiry;
-            this.refreshTokenCookieMaxAge = (int) (refreshTokenExpiry * 0.001); // ms > s변환
+            this.refreshTokenCookieMaxAge = (int)(refreshTokenExpiry * 0.001); // ms > s 변환
         }
     }
-    
+
     @Getter
     @Setter
-    public static class OAuth2{
-        private String authorizationRequest;
-        private String removeAuthorizationRequest;
+    public static class Oauth2 {
+        private String authorizationRequestCookieName;
+        private String redirectUriParamCookieName;
         private int cookieExpirySeconds;
+        private List<String> authorizedRedirectUris;
     }
 }

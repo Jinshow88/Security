@@ -1,4 +1,4 @@
-package com.green.greengram.security.oauh2;
+package com.green.greengram.security.oauh2.userinfo;
 
 import com.green.greengram.security.SignInProviderType;
 import org.springframework.stereotype.Component;
@@ -10,11 +10,11 @@ import java.util.Map;
 구글, 카카오, 네이버에서 받은 JSON Data ? HashMap ? 규격화된 객체로 변환
  */
 
-
 @Component
 public class OAuth2UserInfoFactory {
-    public OAuth2UserInfo getOAuth2UserInfo(SignInProviderType signInProviderType, Map<String, Object> attributes){
-        return switch(signInProviderType){
+    public OAuth2UserInfo getOAuth2UserInfo(SignInProviderType signInProviderType
+            , Map<String, Object> attributes) {
+        return switch(signInProviderType) {
             case GOOGLE -> new GoogleOAuth2UserInfo(attributes);
             case KAKAO -> new KakaoOAuth2UserInfo(attributes);
             case NAVER -> new NaverOAuth2UserInfo(attributes);

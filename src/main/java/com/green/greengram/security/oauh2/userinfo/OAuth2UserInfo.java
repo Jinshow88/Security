@@ -1,4 +1,4 @@
-package com.green.greengram.security.oauh2;
+package com.green.greengram.security.oauh2.userinfo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

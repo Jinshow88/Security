@@ -1,8 +1,8 @@
-package com.green.greengram.security.oauh2;
+package com.green.greengram.security.oauh2.userinfo;
 
 import java.util.Map;
 
-public class NaverOAuth2UserInfo extends OAuth2UserInfo{
+public class NaverOAuth2UserInfo extends OAuth2UserInfo {
 
     public NaverOAuth2UserInfo(Map<String, Object> attributes) {
         super(attributes);

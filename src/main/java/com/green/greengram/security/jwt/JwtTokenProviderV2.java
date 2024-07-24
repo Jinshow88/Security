@@ -8,9 +8,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,12 +26,12 @@ import java.util.Date;
 
 @Slf4j
 @Component// 빈등록
-public class JwtTokenProvider2 {
+public class JwtTokenProviderV2 {
     private final ObjectMapper om;
     private final AppProperties appProperties;
     private final SecretKey secretKey;
 
-    public JwtTokenProvider2(ObjectMapper om, AppProperties appProperties) {
+    public JwtTokenProviderV2(ObjectMapper om, AppProperties appProperties) {
         this.om = om;
         this.appProperties = appProperties;
         this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(appProperties.getJwt().getSecret()));

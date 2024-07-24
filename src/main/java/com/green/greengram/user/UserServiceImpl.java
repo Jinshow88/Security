@@ -3,25 +3,31 @@ package com.green.greengram.user;
 import com.green.greengram.common.AppProperties;
 import com.green.greengram.common.CookieUtils;
 import com.green.greengram.common.CustomFileUtils;
+import com.green.greengram.common.MyCommonUtils;
+import com.green.greengram.entity.User;
+import com.green.greengram.entity.UserRole;
+import com.green.greengram.exception.CustomException;
+import com.green.greengram.exception.MemberErrorCode;
 import com.green.greengram.security.AuthenticationFacade;
-import com.green.greengram.security.MyUserDetails;
 import com.green.greengram.security.SignInProviderType;
-import com.green.greengram.security.jwt.JwtTokenProvider2;
+import com.green.greengram.security.jwt.JwtTokenProviderV2;
 import com.green.greengram.security.MyUser;
+import com.green.greengram.security.MyUserDetails;
 import com.green.greengram.user.model.*;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -31,26 +37,36 @@ public class UserServiceImpl implements UserService {
     private final UserMapper mapper;
     private final CustomFileUtils customFileUtils;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider2 jwtTokenProvider;
+    private final JwtTokenProviderV2 jwtTokenProvider;
     private final CookieUtils cookieUtils;
     private final AuthenticationFacade authenticationFacade;
     private final AppProperties appProperties;
+    private final UserRepository repository;
+    private final UserRoleRepository userRoleRepository;
 
     //SecurityContextHolder > Context > Authentication(UsernamePasswordAuthenticationToken) > MyUserDetails > MyUser
 
     public int signUpPostReq(MultipartFile pic, SignUpPostReq p){
+        p.setProviderType( SignInProviderType.LOCAL );
         String saveFileName = customFileUtils.makeRandomFileName(pic);
 
         p.setPic(saveFileName);
         String password = passwordEncoder.encode(p.getUpw());
-        //String password = BCrypt.hashpw(p.getUpw(),BCrypt.gensalt());
         p.setUpw(password);
-        int result = mapper.signUpPostReq(p);
+
+        User user = new User();//User 엔터티 직접 객체 생성 (영속성이 없는 상태)
+        user.setProviderType(SignInProviderType.LOCAL);
+        user.setUid(p.getUid());
+        user.setUpw(p.getUpw());
+        user.setNm(p.getNm());
+        user.setPic(saveFileName);
+
+        repository.save(user);
         if(pic == null){
-            return result;
+            return 1;
         }
         try{
-            String path = String.format("user/%d", p.getUserId());
+            String path = String.format("user/%d", user.getUserId());
             customFileUtils.makeFolders(path);
             String target = String.format("%s/%s", path, saveFileName);
             customFileUtils.transferTo(pic, target);
@@ -58,29 +74,26 @@ public class UserServiceImpl implements UserService {
             e.printStackTrace();
             throw new RuntimeException("실패");
         }
-        return result;
+        return 1;
     }
 
-//    @Override
-//    public SignInPostRes signInPost(SignInPostReq p) {
-//        return null;
-//    }
-
     public SignInPostRes signInPost(HttpServletResponse res, SignInPostReq p) {
-        p.setProviderType(SignInProviderType.LOCAL.name().toString());
-//        p.setProviderType("LOCAL");
-        User user = mapper.signInPost(p);
-
-        if (user == null) {
-            throw new RuntimeException("아이디를 확인해주세요.");
+        p.setProviderType(SignInProviderType.LOCAL.name());
+        //p.setProviderType("LOCAL");
+        //1. 내가 시도하는 select 2번
+        User user = repository.findUserByProviderTypeAndUid(SignInProviderType.LOCAL, p.getUid());
+        if(user == null || !passwordEncoder.matches(p.getUpw(), user.getUpw())) { //아이디가 없거나 비밀번호가 다르거나
+            throw new CustomException(MemberErrorCode.INCORRECT_ID_PW);
         }
-        if (!BCrypt.checkpw(p.getUpw(), user.getUpw())) {
-            throw new RuntimeException("비밀번호를 확인해주세요.");
+        List<UserRole> userRoleList = userRoleRepository.findAllByUser(user);
+        List<String> roles = new ArrayList();
+        for(UserRole userRole : userRoleList) {
+            roles.add(userRole.getRole());
         }
 
         MyUser myUser = MyUser.builder()
                 .userId(user.getUserId())
-                .role("ROLE_USER")
+                .role(roles)
                 .build();
         /*
         access, refresh token에 myUser(유저pk, 권한정보)를 담는다.
@@ -95,19 +108,19 @@ public class UserServiceImpl implements UserService {
 
         //refreshToken은 보안 쿠키를 이용해서 처리(FE가 따로 작업을 하지 않아도 아래 cookie값은 항상 넘어온다.)
         int refreshTokenMaxAge = appProperties.getJwt().getRefreshTokenCookieMaxAge();
-        cookieUtils.deleteCookie(res, "refresh-token");
-        cookieUtils.setCookie(res, "refresh-token", refreshToken, refreshTokenMaxAge);
+        cookieUtils.deleteCookie(res, appProperties.getJwt().getRefreshTokenCookieName());
+        cookieUtils.setCookie(res, appProperties.getJwt().getRefreshTokenCookieName(), refreshToken, refreshTokenMaxAge);
 
         return SignInPostRes.builder()
-                .userId(user.getUserId())
+                .userId(user.getUserId()) //프로필 사진 띄울때 사용 (프로필 사진 주소에 pk값이 포함됨)
                 .nm(user.getNm())
                 .pic(user.getPic())
                 .accessToken(accessToken)
                 .build();
     }
 
-    public Map getAccessToken(HttpServletRequest req) {
-        Cookie cookie = cookieUtils.getCookie(req, "refresh-token");
+    public Map<String, String> getAccessToken(HttpServletRequest req) {
+        Cookie cookie = cookieUtils.getCookie(req, appProperties.getJwt().getRefreshTokenCookieName());
         if(cookie == null) { // refresh-token 값이 쿠키에 존재 여부
             throw new RuntimeException();
         }
@@ -121,8 +134,9 @@ public class UserServiceImpl implements UserService {
 
         String accessToken = jwtTokenProvider.generateAccessToken(myUser);
 
-        Map map = new HashMap();
+        Map<String, String> map = new HashMap();
         map.put("accessToken", accessToken);
+        map.get("accessToken");
         return map;
     }
 
@@ -137,11 +151,15 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public String patchProfilePic(UserProfilePatchReq p) {
-        p.setSignedUserId(authenticationFacade.getLoginUserId());
+//        p.setSignedUserId(authenticationFacade.getLoginUserId());
         String fileNm = customFileUtils.makeRandomFileName(p.getPic());
         log.info("saveFileName: {}", fileNm);
         p.setPicName(fileNm);
-        mapper.updProfilePic(p);
+//        User user = repository.getReferenceById(signedUserId);
+//        user.setPic(fileNm);
+//        repository.save(user);
+
+//        mapper.updProfilePic(p);
 
         //기존 폴더 삭제
         try {

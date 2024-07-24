@@ -1,8 +1,8 @@
-package com.green.greengram.security.oauh2;
+package com.green.greengram.security.oauh2.userinfo;
 
 import java.util.Map;
 //규격화 작업 중 (각 홈페이지 마다 코드가 달라서 우리가 사용하기 쉽게 하기 위한 작업)
-public class KakaoOAuth2UserInfo extends OAuth2UserInfo{
+public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
 
     public KakaoOAuth2UserInfo(Map<String, Object> attributes) {
         super(attributes);

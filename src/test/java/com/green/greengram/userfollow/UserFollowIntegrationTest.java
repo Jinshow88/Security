@@ -1,9 +1,8 @@
 package com.green.greengram.userfollow;
 
 import com.green.greengram.BaseIntegrationTest;
-import com.green.greengram.common.model.ResultDto;
+import com.green.greengram.common.model.MyResponse;
 import com.green.greengram.userfollow.model.UserFollowReq;
-import net.bytebuddy.build.ToStringPlugin;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -38,7 +37,7 @@ public class UserFollowIntegrationTest extends BaseIntegrationTest {
         .andReturn();
 
         String resContents = mr.getResponse().getContentAsString();
-        ResultDto<Integer> result = om.readValue(resContents, ResultDto.class);
+        MyResponse<Integer> result = om.readValue(resContents, MyResponse.class);
         assertEquals(1, result.getResultData());
     }
 
@@ -57,7 +56,7 @@ public class UserFollowIntegrationTest extends BaseIntegrationTest {
                         .andReturn();
 
         String resContents = mr.getResponse().getContentAsString();
-        ResultDto<Integer> result = om.readValue(resContents, ResultDto.class);
+        MyResponse<Integer> result = om.readValue(resContents, MyResponse.class);
         assertEquals(1, result.getResultData());
     }
 }
