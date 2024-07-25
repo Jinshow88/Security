@@ -1,5 +1,6 @@
 package com.green.greengram.feedfavorite;
 
+import com.green.greengram.entity.Feed;
 import com.green.greengram.entity.FeedFavorite;
 import com.green.greengram.entity.User;
 import com.green.greengram.feedfavorite.model.FeedFavoriteReq;
@@ -17,28 +18,14 @@ public class FeedFavoriteServiceImpl implements FeedFavoriteService {
     private final FeedFavoriteRepository feedFavoriteRepository;
 
     public int toggleReq(FeedFavoriteReq p) {
-        FeedFavorite feedFavorite = feedFavoriteRepository.getReferenceById(authenticationFacade.getLoginUserId());
-        feedFavoriteRepository.deleteById(feedFavorite.getFeed().getFeedId());
-        if (feedFavorite.getFeedFavoriteId() == 1){
-            return 0;
+
+        FeedFavorite feedFavorite = feedFavoriteRepository.findFeedFavoriteByFeedIdAndSignedUserId(p.getFeedId(), authenticationFacade.getLoginUserId());
+        if(feedFavorite == null) {
+            feedFavoriteRepository.saveFeedFavorite(p.getFeedId(), authenticationFacade.getLoginUserId());
+            return 1;
         }
-        return feedFavoriteRepository.save();
-
-
-
-
-
-
-
-
-
-        //        p.setUserId(authenticationFacade.getLoginUserId());
-//        int result = mapper.delFeedFavorite(p);
-//        if(result == 1) {
-//            return 0;
-//        }
-//        return mapper.insFeedFavorite(p);
-
+        feedFavoriteRepository.delete(feedFavorite);
+        return 1;
     }
 
 }
